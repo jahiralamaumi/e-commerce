@@ -1,21 +1,44 @@
+const bcrypt = require('bcrypt');
 const users = [];
 
 const createUser = (req, res) => {
-    const body = req.body;
-    const name = body.name;
-    const email = body.email;
+    const { firstName, lastName, email, password, confirmPassword } = req.body;
+    const hashedPassword = bcrypt.hashSync(password, 8);
     
     const user = users.find( (user) => user.email === email );
+    if(user) return res.status(400).send("User already exists");
     
-    if(!user){
-        users.push(body);
-    }
-    else{
-        res.status(400).send("User already exists");
-    }
-
-    res.status(201).send(users);
+    const newUser = {
+        firstName,
+        lastName,
+        email,
+        password: hashedPassword
+    };
+    users.push(newUser);
+    const modifiedUser = {...newUser};
+    delete modifiedUser.password;
+    res.status(201).send(modifiedUser);
 };
+
+function login(req, res){
+    const { email, password } = req.body;
+    const token = bcrypt.hashSync('1234', 8);
+
+    const user = users.find( user => email === user.email);
+    const passwordMatched = bcrypt.compareSync(password, user.password);
+    
+    if(!user || !passwordMatched) return res.status(400).send('Incorrect credentials');
+
+    user.token = token;
+    const modifiedUser = { ...user };
+    delete modifiedUser.password;
+    
+    res.status(201).send(modifiedUser);
+}
+
+function findUser(email){
+    return users.find( user => email === user.email);
+}
 
 function getUsers(req, res){
     console.log(users);
@@ -23,16 +46,20 @@ function getUsers(req, res){
 }
 
 const updateUser = ( req, res ) => {
-    const body = req.body;
-    const name = body.name;
+    const { firstName, lastName } = req.body;
     const email = req.params.email;
 
     const user = users.find( user => user.email === email );
 
     if(!user) return res.status(400).send('User not found!');
 
-    user.name = name;
-    res.status(201).send(users);
+    user.firstName = firstName;
+    user.lastName = lastName;
+    const modifiedUser = { ...user };
+    
+    delete modifiedUser.password;
+
+    res.status(201).send(modifiedUser);
 }
 
 const deleteUser = ( req, res ) => {
@@ -47,6 +74,8 @@ const deleteUser = ( req, res ) => {
 }
 
 module.exports.createUser = createUser;
+module.exports.login = login;
+module.exports.findUser = findUser;
 module.exports.getUsers = getUsers;
 module.exports.updateUser = updateUser;
 module.exports.deleteUser = deleteUser;
