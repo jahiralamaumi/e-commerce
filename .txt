@@ -1,0 +1,8 @@
+// GITHUB Clear already tracked history - when you uploaded without .gitignore then add gitignore later
+git rm --cached .env
+git commit -m "stop tracking node modules"
+git push origin <branch name- main or master> --force
+
+git rm -rf --cached node_modules
+git commit -m "stop tracking node modules"
+git push origin main --force
